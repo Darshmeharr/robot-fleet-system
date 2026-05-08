@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Robot Fleet Dashboard</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    input {
+      padding: 10px;
+      width: 70%;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      background: #38bdf8;
+      color: black;
+      border-radius: 8px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    .robot {
+      padding: 10px;
+      margin: 5px 0;
+      background: #334155;
+      border-radius: 8px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+
+const socket = io("http://localhost:3001");
+
+function App() {
+  const [robots, setRobots] = React.useState([]);
+  const [tasks, setTasks] = React.useState([]);
+  const [taskName, setTaskName] = React.useState("");
+
+  React.useEffect(() => {
+    socket.on("robotsUpdate", (data) => setRobots(data));
+    socket.on("tasksUpdate", (data) => setTasks(data));
+  }, []);
+
+  const createTask = () => {
+    socket.emit("createTask", { name: taskName });
+    setTaskName("");
+  };
+
+  return (
+    <div className="container">
+
+      <h1>🤖 Robot Fleet Dashboard</h1>
+
+      {/* TASK CREATION */}
+      <div className="card">
+        <h3>Create Task</h3>
+        <input
+          value={taskName}
+          onChange={(e) => setTaskName(e.target.value)}
+          placeholder="Enter task (e.g. Deliver box)"
+        />
+        <button onClick={createTask}>Add Task</button>
+      </div>
+
+      <br />
+
+      <div className="grid">
+
+        {/* ROBOTS */}
+        <div className="card">
+          <h3>Robots</h3>
+          {robots.map(r => (
+            <div key={r.id} className="robot">
+              <b>{r.id}</b>
+              <div className="status">
+                Status: {r.status} <br />
+                Battery: {r.battery.toFixed(0)}% <br />
+                Task: {r.task || "None"}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* TASKS */}
+        <div className="card">
+          <h3>Tasks</h3>
+          {tasks.map(t => (
+            <div key={t.id} className="robot">
+              {t.name} {t.assigned ? "✅" : "⏳"}
+            </div>
+          ))}
+        </div>
+
+        {/* LIVE SIMULATION VIEW */}
+        <div className="card">
+          <h3>Live Movement (X,Y)</h3>
+          {robots.map(r => (
+            <div key={r.id} className="robot">
+              {r.id}: ({r.x.toFixed(1)}, {r.y.toFixed(1)})
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>
